@@ -1,17 +1,16 @@
 <?php
-include "../connection.php";
-require "../incl/generatePass.php";
-require_once "../incl/exploitPatch.php";
+include "../incl/lib/connection.php";
+require "../incl/lib/generatePass.php";
+require_once "../incl/lib/exploitPatch.php";
 $ep = new exploitPatch();
-//here im getting all the data
-$userName = $ep->remove($_POST["userName"]);
-$password = md5($_POST["password"] . "epithewoihewh577667675765768rhtre67hre687cvolton5gw6547h6we7h6wh");
-$packName = $ep->remove($_POST["packName"]);
-$levels = $ep->remove($_POST["levels"]);
-$stars = $ep->remove($_POST["stars"]);
-$coins = $ep->remove($_POST["coins"]);
-$color = $ep->remove($_POST["color"]);
-if($userName != "" AND $password != "" AND $levels != "" AND $color != ""){
+if(!empty($_POST["userName"]) AND !empty($_POST["password"]) AND !empty($_POST["packName"]) AND !empty($_POST["levels"]) AND !empty($_POST["stars"]) AND !empty($_POST["coins"]) AND !empty($_POST["color"])){
+	$userName = $ep->remove($_POST["userName"]);
+	$password = $ep->remove($_POST["password"]);
+	$packName = $ep->remove($_POST["packName"]);
+	$levels = $ep->remove($_POST["levels"]);
+	$stars = $ep->remove($_POST["stars"]);
+	$coins = $ep->remove($_POST["coins"]);
+	$color = $ep->remove($_POST["color"]);
 	$generatePass = new generatePass();
 	$pass = $generatePass->isValidUsrname($userName, $password);
 	if ($pass == 1) {
@@ -105,6 +104,6 @@ if($userName != "" AND $password != "" AND $levels != "" AND $color != ""){
 		<br>Stars: <input type="text" name="stars"> (max 10)
 		<br>Coins: <input type="text" name="coins"> (max 2)
 		<br>Color: <input name="color" class="jscolor" value="ffffff">
-		<input type="submit" value="Change"></form>';
+		<input type="submit" value="Create"></form>';
 }
 ?>

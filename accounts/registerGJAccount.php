@@ -1,43 +1,25 @@
 <?php
-include "../connection.php";
-require_once "../incl/exploitPatch.php";
+include "../incl/lib/connection.php";
+require_once "../incl/lib/exploitPatch.php";
 $ep = new exploitPatch();
 if($_POST["userName"] != ""){
-//here im getting all the data
-$userName = $ep->remove($_POST["userName"]);
-$password = md5($_POST["password"] . "epithewoihewh577667675765768rhtre67hre687cvolton5gw6547h6we7h6wh");
-$email = $ep->remove($_POST["email"]);
-$secret = "";
-//checking if name is taken
-$query2 = $db->prepare("SELECT * FROM accounts WHERE userName=:userName");
-$query2->execute([':userName' => $userName]);
-$regusrs = $query2->rowCount();
-if ($regusrs > 0) {
-echo "-2";
-}else{
-//creating pass hash
-CRYPT_BLOWFISH or die ('-2');
-//This string tells crypt to use blowfish for 5 rounds.
-$Blowfish_Pre = '$2a$05$';
-$Blowfish_End = '$';
-// Blowfish accepts these characters for salts.
-$Allowed_Chars =
-'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./';
-$Chars_Len = 63;
-$Salt_Length = 21;
-$salt = "";
-for($i=0; $i < $Salt_Length; $i++)
-{
-    $salt .= $Allowed_Chars[mt_rand(0,$Chars_Len)];
-}
-$bcrypt_salt = $Blowfish_Pre . $salt . $Blowfish_End;
-$password = crypt($password, $bcrypt_salt);
-//registering
-$query = $db->prepare("INSERT INTO accounts (userName, password, email, secret, salt, saveData, registerDate)
-VALUES (:userName, :password, :email, :secret, :salt, '', :time)");
-
-$query->execute([':userName' => $userName, ':password' => $password, ':email' => $email, ':secret' => $secret, ':salt' => $salt, ':time' => time()]);
-echo "1";
-}
+	//here im getting all the data
+	$userName = $ep->remove($_POST["userName"]);
+	$password = $ep->remove($_POST["password"]);
+	$email = $ep->remove($_POST["email"]);
+	$secret = "";
+	//checking if name is taken
+	$query2 = $db->prepare("SELECT count(*) FROM accounts WHERE userName LIKE :userName");
+	$query2->execute([':userName' => $userName]);
+	$regusrs = $query2->fetchColumn();
+	if ($regusrs > 0) {
+		echo "-2";
+	}else{
+		$hashpass = password_hash($password, PASSWORD_DEFAULT);
+		$query = $db->prepare("INSERT INTO accounts (userName, password, email, secret, saveData, registerDate, saveKey)
+		VALUES (:userName, :password, :email, :secret, '', :time, '')");
+		$query->execute([':userName' => $userName, ':password' => $hashpass, ':email' => $email, ':secret' => $secret, ':time' => time()]);
+		echo "1";
+	}
 }
 ?>

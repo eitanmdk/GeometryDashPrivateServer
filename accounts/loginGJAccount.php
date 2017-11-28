@@ -1,7 +1,7 @@
 <?php
-include "../connection.php";
-require "../incl/generatePass.php";
-require_once "../incl/exploitPatch.php";
+include "../incl/lib/connection.php";
+require "../incl/lib/generatePass.php";
+require_once "../incl/lib/exploitPatch.php";
 if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
 	$ip = $_SERVER['HTTP_CLIENT_IP'];
 } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -13,18 +13,19 @@ $ep = new exploitPatch();
 //here im getting all the data
 $udid = $ep->remove($_POST["udid"]);
 $userName = $ep->remove($_POST["userName"]);
-$password = md5($_POST["password"] . "epithewoihewh577667675765768rhtre67hre687cvolton5gw6547h6we7h6wh");
+$password = $ep->remove($_POST["password"]);
 //registering
-$query = "select * from accounts where userName = :userName";
-$query = $db->prepare($query);
+$query = $db->prepare("SELECT accountID FROM accounts WHERE userName LIKE :userName");
 $query->execute([':userName' => $userName]);
-$result = $query->fetchAll();
-$account = $result[0];
+if($query->rowCount() == 0){
+	exit("-1");
+}
+$account = $query->fetch();
 //rate limiting
 $newtime = time() - 3600;
-$query6 = $db->prepare("SELECT * FROM actions WHERE type = '1' AND timestamp > :time AND value2 = :ip");
+$query6 = $db->prepare("SELECT count(*) FROM actions WHERE type = '1' AND timestamp > :time AND value2 = :ip");
 $query6->execute([':time' => $newtime, ':ip' => $ip]);
-if($query6->rowCount > 2){
+if($query6->fetchColumn() > 5){
 	exit("-12");
 }
 //authenticating
@@ -33,30 +34,17 @@ $pass = $generatePass->isValidUsrname($userName, $password);
 if ($pass == 1) { //success
 	//userID
 	$id = $account["accountID"];
-	$query2 = $db->prepare("SELECT * FROM users WHERE extID = :id");
+	$query2 = $db->prepare("SELECT userID FROM users WHERE extID = :id");
 
 	$query2->execute([':id' => $id]);
-	$result = $query2->fetchAll();
 	if ($query2->rowCount() > 0) {
-	$select = $result[0];
-	$userID = $select[1];
+		$userID = $query2->fetchAll()[0]["userID"];
 	} else {
-	$query = $db->prepare("INSERT INTO users (isRegistered, extID, userName)
-	VALUES (1, :id, :userName)");
+		$query = $db->prepare("INSERT INTO users (isRegistered, extID, userName)
+		VALUES (1, :id, :userName)");
 
-	$query->execute([':id' => $id, ':userName' => $userName]);
-	$userID = $db->lastInsertId();
-	}
-	if($account["isAdmin"]==1){ //modIPs
-		$query4 = $db->prepare("select * from modips where accountID = :id");
-		$query4->execute([':id' => $id]);
-		if ($query4->rowCount() > 0) {
-			$query6 = $db->prepare("UPDATE modips SET IP=:hostname WHERE accountID=:id");
-			$query6->execute([':hostname' => $ip, ':id' => $id]);
-		}else{
-			$query6 = $db->prepare("INSERT INTO modips (IP, accountID, isMod) VALUES (:hostname,:id,'1')");
-			$query6->execute([':hostname' => $ip, ':id' => $id]);
-		}
+		$query->execute([':id' => $id, ':userName' => $userName]);
+		$userID = $db->lastInsertId();
 	}
 	//logging
 	$query6 = $db->prepare("INSERT INTO actions (type, value, timestamp, value2) VALUES 
@@ -65,9 +53,9 @@ if ($pass == 1) { //success
 	//result
 	echo $id.",".$userID;
 	if(!is_numeric($udid)){
-		$query2 = $db->prepare("SELECT * FROM users WHERE extID = :udid");
+		$query2 = $db->prepare("SELECT userID FROM users WHERE extID = :udid");
 		$query2->execute([':udid' => $udid]);
-		$usrid2 = $query->fetchAll()[0]["userID"];
+		$usrid2 = $query2->fetchColumn();
 		$query2 = $db->prepare("UPDATE levels SET userID = :userID, extID = :extID WHERE userID = :usrid2");
 		$query2->execute([':userID' => $userID, ':extID' => $id, ':usrid2' => $usrid2]);	
 	}
